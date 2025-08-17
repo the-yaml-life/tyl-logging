@@ -1,0 +1,19 @@
+[package]
+name = "tyl-logging"
+version = "0.1.0"
+edition = "2021"
+authors = ["TYL Framework Team"]
+license = "AGPL-3.0"
+repository = "https://github.com/the-yaml-life/tyl-logging"
+description = "Simple structured logging library for TYL framework with hexagonal architecture"
+homepage = "https://github.com/the-yaml-life/tyl-logging"
+documentation = "https://docs.rs/tyl-logging"
+readme = "README.md"
+keywords = ["logging", "structured-logging", "hexagonal-architecture", "tyl", "framework"]
+categories = ["development-tools::debugging", "rust-patterns"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.0", features = ["v4"] }
+thiserror = "1.0"
