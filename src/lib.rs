@@ -36,6 +36,24 @@
 //! logger.log(&record);
 //! ```
 
+// Module declarations
+pub mod config;
+pub mod record;
+pub mod loggers;
+pub mod utils;
+
+// TYL Framework imports
+use tyl_errors::TylResult;
+
+/// Result type for logging operations using unified TYL error handling
+pub type LoggingResult<T> = TylResult<T>;
+
+// Re-exports for public API
+pub use config::{LoggingConfig, Environment};
+pub use record::{LogRecord, LogLevel};
+pub use loggers::{Logger, ConsoleLogger, JsonLogger};
+pub use utils::generate_request_id;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -167,223 +185,5 @@ mod tests {
         // Then: should capture messages
         assert_eq!(logger.messages.borrow().len(), 1);
         assert_eq!(logger.messages.borrow()[0], "Test message");
-    }
-}
-
-// Implementation starts here - all tests will fail initially (TDD red phase)
-use serde_json::Value;
-use std::collections::HashMap;
-use std::time::{SystemTime, UNIX_EPOCH};
-use uuid::Uuid;
-
-/// Result type for logging operations
-pub type LoggingResult<T> = Result<T, LoggingError>;
-
-/// Errors that can occur during logging operations  
-#[derive(Debug, thiserror::Error)]
-pub enum LoggingError {
-    #[error("IO error: {0}")]
-    Io(#[from] std::io::Error),
-    #[error("Serialization error: {0}")]
-    Serialization(#[from] serde_json::Error),
-    #[error("Configuration error: {message}")]
-    Configuration { message: String },
-}
-
-/// Port - Main logging interface that all loggers must implement
-pub trait Logger {
-    /// Log a record to the output destination
-    fn log(&self, record: &LogRecord);
-}
-
-/// Log severity levels in order of importance
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum LogLevel {
-    Trace = 0,
-    Debug = 1,
-    Info = 2,
-    Warn = 3,
-    Error = 4,
-}
-
-/// Runtime environment for the service
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Environment {
-    Development,
-    Production,
-    Test,
-}
-
-/// A structured log record containing all log information
-#[derive(Debug, Clone)]
-pub struct LogRecord {
-    level: LogLevel,
-    message: String,
-    timestamp: u64,
-    fields: HashMap<String, Value>,
-    request_id: Option<String>,
-}
-
-/// Configuration for logging setup
-#[derive(Debug, Clone)]
-pub struct LoggingConfig {
-    service_name: String,
-    level: LogLevel,
-    environment: Environment,
-}
-
-// Temporary implementations that will fail tests (TDD red phase)
-impl LogRecord {
-    pub fn new(level: LogLevel, message: impl Into<String>) -> Self {
-        Self {
-            level,
-            message: message.into(),
-            timestamp: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs(),
-            fields: HashMap::new(),
-            request_id: None,
-        }
-    }
-
-    pub fn level(&self) -> LogLevel {
-        self.level
-    }
-    pub fn message(&self) -> &str {
-        &self.message
-    }
-    pub fn timestamp(&self) -> u64 {
-        self.timestamp
-    }
-    pub fn fields(&self) -> &HashMap<String, Value> {
-        &self.fields
-    }
-
-    pub fn add_field(&mut self, key: impl Into<String>, value: Value) {
-        self.fields.insert(key.into(), value);
-    }
-
-    pub fn with_request_id(mut self, request_id: String) -> Self {
-        self.request_id = Some(request_id);
-        self
-    }
-}
-
-/// Adapter - Simple console logger for development
-pub struct ConsoleLogger;
-
-impl ConsoleLogger {
-    pub fn new() -> Self {
-        Self
-    }
-}
-
-impl Default for ConsoleLogger {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Logger for ConsoleLogger {
-    fn log(&self, record: &LogRecord) {
-        println!(
-            "[{}] {}: {}",
-            format_timestamp(record.timestamp()),
-            format_level(record.level()),
-            record.message()
-        );
-    }
-}
-
-/// Adapter - JSON structured logger for production
-pub struct JsonLogger;
-
-impl JsonLogger {
-    pub fn new() -> Self {
-        Self
-    }
-}
-
-impl Default for JsonLogger {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Logger for JsonLogger {
-    fn log(&self, record: &LogRecord) {
-        let json_record = serde_json::json!({
-            "timestamp": record.timestamp(),
-            "level": format_level(record.level()),
-            "message": record.message(),
-            "fields": record.fields(),
-            "request_id": record.request_id
-        });
-        println!("{json_record}");
-    }
-}
-
-impl LoggingConfig {
-    pub fn new(service_name: impl Into<String>) -> Self {
-        Self {
-            service_name: service_name.into(),
-            level: LogLevel::Info,
-            environment: Environment::from_env(),
-        }
-    }
-
-    pub fn with_level(mut self, level: LogLevel) -> Self {
-        self.level = level;
-        self
-    }
-
-    pub fn with_environment(mut self, environment: Environment) -> Self {
-        self.environment = environment;
-        self
-    }
-
-    pub fn service_name(&self) -> &str {
-        &self.service_name
-    }
-    pub fn level(&self) -> LogLevel {
-        self.level
-    }
-    pub fn environment(&self) -> Environment {
-        self.environment.clone()
-    }
-}
-
-impl Environment {
-    pub fn from_env() -> Self {
-        match std::env::var("ENVIRONMENT")
-            .unwrap_or_else(|_| "development".to_string())
-            .to_lowercase()
-            .as_str()
-        {
-            "production" | "prod" => Environment::Production,
-            "test" | "testing" => Environment::Test,
-            _ => Environment::Development,
-        }
-    }
-}
-
-/// Generate a new request ID for correlation
-pub fn generate_request_id() -> String {
-    Uuid::new_v4().to_string()
-}
-
-fn format_timestamp(timestamp: u64) -> String {
-    // Simple timestamp formatting
-    format!("{timestamp}")
-}
-
-fn format_level(level: LogLevel) -> &'static str {
-    match level {
-        LogLevel::Trace => "TRACE",
-        LogLevel::Debug => "DEBUG",
-        LogLevel::Info => "INFO",
-        LogLevel::Warn => "WARN",
-        LogLevel::Error => "ERROR",
     }
 }
