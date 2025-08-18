@@ -84,7 +84,7 @@ impl ConfigPlugin for LoggingConfig {
         Ok(())
     }
 
-    fn from_env(&self) -> ConfigResult<Self> {
+    fn load_from_env(&self) -> ConfigResult<Self> {
         let mut config = Self::new("app");
         config.merge_env()?;
         Ok(config)
