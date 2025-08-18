@@ -2,8 +2,8 @@
 //!
 //! This module contains helper functions for formatting and ID generation.
 
-use uuid::Uuid;
 use crate::record::LogLevel;
+use uuid::Uuid;
 
 /// Generate a new request ID for correlation
 pub fn generate_request_id() -> String {
