@@ -38,8 +38,8 @@
 
 // Module declarations
 pub mod config;
-pub mod record;
 pub mod loggers;
+pub mod record;
 pub mod utils;
 
 // TYL Framework imports
@@ -49,9 +49,9 @@ use tyl_errors::TylResult;
 pub type LoggingResult<T> = TylResult<T>;
 
 // Re-exports for public API
-pub use config::{LoggingConfig, Environment};
-pub use record::{LogRecord, LogLevel};
-pub use loggers::{Logger, ConsoleLogger, JsonLogger};
+pub use config::{Environment, LoggingConfig};
+pub use loggers::{ConsoleLogger, JsonLogger, Logger};
+pub use record::{LogLevel, LogRecord};
 pub use utils::generate_request_id;
 
 #[cfg(test)]

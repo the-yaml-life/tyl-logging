@@ -4,7 +4,7 @@
 
 use super::Logger;
 use crate::record::LogRecord;
-use crate::utils::{format_timestamp, format_level};
+use crate::utils::{format_level, format_timestamp};
 
 /// Adapter - Simple console logger for development
 pub struct ConsoleLogger;

@@ -8,7 +8,9 @@ use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Log severity levels in order of importance
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+)]
 pub enum LogLevel {
     Trace = 0,
     Debug = 1,
@@ -46,17 +48,17 @@ impl LogRecord {
     pub fn level(&self) -> LogLevel {
         self.level
     }
-    
+
     /// Get the log message
     pub fn message(&self) -> &str {
         &self.message
     }
-    
+
     /// Get the timestamp
     pub fn timestamp(&self) -> u64 {
         self.timestamp
     }
-    
+
     /// Get the additional fields
     pub fn fields(&self) -> &HashMap<String, Value> {
         &self.fields
